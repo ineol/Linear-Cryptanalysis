@@ -120,12 +120,8 @@ void pb(block b) {
 }
 
 bool check_rel(block K0, block K1, block msg, block A, block B) {
-  //cout << A << " " << msg << endl;
-  //cout << strange_op(A, msg) << " " << (int)strange_op(rotr(B, 2), B32_turn(K1, msg ^ K0)) << endl;
-//  pb(A); pb(B); pb(rotr(B, 2));
-    
   bool x = strange_op(rotr(B, 2), B32_turn(K1, msg ^ K0));
-  cout << (x == strange_op(B, apply_subst(S, msg ^ K0) ^ (rotr(K1, 30)))) << endl;
+  // cout << (x == strange_op(B, 0xF0000000 & apply_subst(S, msg ^ K0) ^ (rotr(K1, 30)))) << endl;
   return x == strange_op(A, msg);
 }
 
@@ -150,7 +146,10 @@ double question4(byte a, byte b) {
   const int N = 100;
   double total = 0;
   for (int i = 0; i < N; i++) {
-    total += question4_aux(a, b);
+      auto t = question4_aux(a, b);
+      if (t > .5)
+	  t = 1.0 - t;
+      total += t;
   }
   return total / double(N);
 }
