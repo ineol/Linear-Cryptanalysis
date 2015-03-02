@@ -154,6 +154,28 @@ double question4(byte a, byte b) {
   return total / double(N);
 }
 
+bool check_rel2(block K0, block K1, block msg,block B) {
+  bool x = strange_op(rotr(B, 2), B32_turn(K1, msg ^ K0));
+  // cout << (x == strange_op(B, 0xF0000000 & apply_subst(S, msg ^ K0) ^ (rotr(K1, 30)))) << endl;
+  return  strange_op(B, apply_subst(S, msg ^ K0) ^ K1)== strange_op(B, apply_subst(S, msg));
+}
+
+double experiment(byte a, byte b) {
+    assert (a < 16 && b < 16);
+    block K0 = random_block();
+    block K1 = random_block();
+    const int N = 2000;
+    block B = b << 28;
+    int total = 0;
+    for (int i = 0; i < N; i++) {
+	block msg = random_block();
+	if (check_rel2(K0, K1, msg, B)) {
+	    total += 1;
+	}
+    }
+    return double(total) / double(N);
+}
+
 /* ==== main ==== */
 
 int main() {
