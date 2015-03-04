@@ -89,7 +89,8 @@ matrix populate_linapp_matrix(const sbox s) {
   for (int i = 0; i < 16; i++) {
     m.push_back(vector<double>());
     for (int j = 0; j < 16; j++) {
-      double mij = (double)compute_L_of(s, i, j) - 8.0; // / 16.0;
+      double mij = (double)compute_L_of(s, i, j); // / 16.0;
+      if (mij == 14 || mij == 2) cout << mij << " " << i << " " << j << endl;
       m[i].push_back(mij);
     }
   }
@@ -210,6 +211,6 @@ int main() {
 
   int x = 12;
   cout << strange_op(11, 9) << " " << strange_op(11<<x, 9<<x);
-  
+
   return 0;
 }
