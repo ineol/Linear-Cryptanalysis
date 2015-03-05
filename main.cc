@@ -221,76 +221,85 @@ int active_sbox(byte a)
 typedef pair<byte, byte> couple;
 
 /* Finds the couples (a, b) of question 3 */
-vector<couple> interresting_couples(const imatrix L) {
+vector<couple> interresting_couples(const imatrix L)
+{
     vector<couple> res;
     int N = L.size();
     for (int i = 0; i < N; i++) {
-	for (int j = 0; j < N; j++) {
-	    auto Lij = L[i][j];
-	    if (Lij == 14 || Lij == 2) {
-		res.push_back(couple(i, j));
-	    }
-	}
+        for (int j = 0; j < N; j++) {
+            auto Lij = L[i][j];
+            if (Lij == 14 || Lij == 2) {
+                res.push_back(couple(i, j));
+            }
+        }
     }
     return res;
 }
 
-template<class X, class Y>
-basic_ostream<X, Y> &operator<<(basic_ostream<X, Y> &out, const couple &c) {
+template <class X, class Y>
+basic_ostream<X, Y>& operator<<(basic_ostream<X, Y>& out, const couple& c)
+{
     out << "(" << (int)c.first << ", " << (int)c.second << ")";
     return out;
 }
 
-ostream &operator<<(ostream &out, const vector<couple> cs) {
+ostream& operator<<(ostream& out, const vector<couple> cs)
+{
     out << "[";
     for (auto p : cs) {
-	out << p << ", ";
+        out << p << ", ";
     }
     out << "]";
     return out;
 }
 
-void print_linear_eq(block X, char var) {
+void print_linear_eq(block X, char var)
+{
     bool first = true;
     for (int i = 0; i < 32; i++) {
-	block bit = (X & (1 << i)) >> i;
-	assert (bit == 1 || bit == 0); // duh
-	if (bit == 1) {
-	    if (!first) {
-		cout << " + ";
-	    } else {
-		first = false;
-	    }
-	    cout << var << i;
-	}
+        block bit = (X & (1 << i)) >> i;
+        assert(bit == 1 || bit == 0); // duh
+        if (bit == 1) {
+            if (!first) {
+                cout << " + ";
+            }
+            else {
+                first = false;
+            }
+            cout << var << i;
+        }
     }
 }
 
-void question6(const imatrix &L) {
-    for (auto &p : interresting_couples(L)) {
-	byte a = p.first;
-	byte b = p.second;
-	block A = a << 28;
-	block B = b << 28;
-	
-	cout << "===== " << p << " =====" << endl;
-	cout << "P(B) = ";
-	pb(rotr(B, 2));
-	print_linear_eq(A, 'M');
-	cout << " = ";
-	print_linear_eq(rotr(B, 2), 'X');
-	cout << "\n";
-	int boxes = active_sbox(b);
-	cout << "Active S-boxes: ";
-	if (boxes == 0) {
-	    cout << "0\n";
-	} else if (boxes == 1) {
-	    cout << "1\n";
-	} else if (boxes == -1 ){
-	    cout << "0 and 1\n";
-	} else {
-	    assert(false);
-	}
+void question6(const imatrix& L)
+{
+    for (auto& p : interresting_couples(L)) {
+        byte a = p.first;
+        byte b = p.second;
+        block A = a << 28;
+        block B = b << 28;
+
+        cout << "===== " << p << " =====" << endl;
+        cout << "P(B) = ";
+        pb(rotr(B, 2));
+        print_linear_eq(A, 'M');
+        cout << " = ";
+        print_linear_eq(rotr(B, 2), 'X');
+        cout << "\n";
+        int boxes = active_sbox(b);
+        cout << "Active S-boxes: ";
+        if (boxes == 0) {
+            cout << "0\n";
+        }
+        else if (boxes == 1) {
+            cout << "1\n";
+        }
+        else if (boxes == -1) {
+            cout << "0 and 1\n";
+        }
+        else {
+            assert(false);
+        }
     }
 }
 
@@ -331,13 +340,3 @@ int main()
     question6(L);
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
