@@ -207,10 +207,10 @@ double experiment(byte a, byte b)
 int active_sbox(byte a)
 {
     assert(a <= 0xF);
-    if ((a & 0xC) == 0) {
+    if ((a & 0xC) == 0) { // 1100
         return 1;
     }
-    else if ((a & 0x3) == 0) {
+    else if ((a & 0x3) == 0) { // 0011
         return 0;
     }
     else {
@@ -293,6 +293,8 @@ void question6(const imatrix &L) {
 	}
     }
 }
+
+#include "known_ciphertexts.cc"
 
 /* ==== main ==== */
 
