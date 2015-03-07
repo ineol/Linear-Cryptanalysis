@@ -309,23 +309,25 @@ void question6(const imatrix& L)
 
 /* c : cipher, k2: key guess
  */
-block x1_guess(block c, block k2) {
+block x1_guess(block c, block k2)
+{
     block x2 = c ^ k2;
     block before_S = rotr(x2, 30);
     return apply_subst(Sinv, before_S);
 }
 
-double linear_rel_stats(byte a, byte b, block k2, int shift) {
-    block A = a << (28 - 4*shift);
-    block B = b << (28 - 4*shift);
+double linear_rel_stats(byte a, byte b, block k2, int shift)
+{
+    block A = a << (28 - 4 * shift);
+    block B = b << (28 - 4 * shift);
 
     int N = Plaintext.size();
     double total = 0;
     for (int i = 0; i < N; i++) {
-	block x1 = x1_guess(Ciphertext[i], k2);
-	if (strange_op(A, Plaintext[i]) == strange_op(rotr(B, 2), x1)) {
-	    total += 1;
-	}
+        block x1 = x1_guess(Ciphertext[i], k2);
+        if (strange_op(A, Plaintext[i]) == strange_op(rotr(B, 2), x1)) {
+            total += 1;
+        }
     }
     double proba = total / double(N);
     return (proba > .5) ? 1.0 - proba : proba;
@@ -333,38 +335,42 @@ double linear_rel_stats(byte a, byte b, block k2, int shift) {
 
 typedef vector<double> bvec;
 
-bvec populate_map_1_box(byte a, byte b, int shift) {
+bvec populate_map_1_box(byte a, byte b, int shift)
+{
     bvec res(16);
     assert(active_sbox(b) == 0); // Always the case
     for (int i = 0; i <= 0xF; i++) {
-	block guess = i << (28 - 4*shift);
-	guess = rotr(guess, 2); 
-	res[i] = linear_rel_stats(a, b, guess, shift);
+        block guess = i << (28 - 4 * shift);
+        guess = rotr(guess, 2);
+        res[i] = linear_rel_stats(a, b, guess, shift);
     }
     return res;
 }
 
-bvec average(bvec m1, bvec m2) {
+bvec average(bvec m1, bvec m2)
+{
     bvec m(m1.size());
     for (int i = 0; i < m.size(); i++) {
-	m[i] = (m1[i] + m2[i]) / 2.0;
+        m[i] = (m1[i] + m2[i]) / 2.0;
     }
     return m;
 }
 
-byte find_subkey_1_box(vector<pair<byte, byte>> as, int shift) {
+byte find_subkey_1_box(vector<pair<byte, byte> > as, int shift)
+{
     bvec res = populate_map_1_box(as[0].first, as[0].second, shift);
     for (int i = 1; i < as.size(); i++) {
-	res = average(res, populate_map_1_box(as[i].first, as[i].second, shift));
+        res = average(res, populate_map_1_box(as[i].first, as[i].second, shift));
     }
 
     return distance(res.begin(), min_element(res.begin(), res.end()));
 }
 
-block find_key_1_block(vector<pair<byte, byte>> as) {
+block find_key_1_block(vector<pair<byte, byte> > as)
+{
     block res = 0;
     for (int i = 0; i < 8; i++) {
-	res |= (find_subkey_1_box(as, i) << (28 - 4*i));
+        res |= (find_subkey_1_box(as, i) << (28 - 4 * i));
     }
     return rotr(res, 2);
 }
@@ -373,77 +379,82 @@ block find_key_1_block(vector<pair<byte, byte>> as) {
 
 typedef bitset<32> bskey;
 
-const vector<byte> k0_of_k = {17, 31, 0, 0, 18, 7, 20, 18, 8, 1, 27, 27, 2, 4, 11, 20, 25, 13, 17, 10, 24, 9, 29, 15, 21, 18, 28, 20, 4, 5, 24, 15};
-const vector<byte> k1_of_k = {15, 2, 5, 0, 13, 31, 5, 10, 18, 2, 3, 14, 14, 0, 11, 1, 20, 15, 14, 27, 6, 11, 19, 3, 6, 20, 14, 2, 28, 11, 5, 8};
-const vector<byte> k2_of_k = {4, 24, 23, 12, 22, 21, 31, 15, 29, 1, 0, 26, 17, 24, 16, 5, 31, 0, 20, 21, 26, 30, 15, 11, 16, 23, 18, 30, 30, 19, 28, 23};
+const vector<byte> k0_of_k = { 17, 31, 0, 0, 18, 7, 20, 18, 8, 1, 27, 27, 2, 4, 11, 20, 25, 13, 17, 10, 24, 9, 29, 15, 21, 18, 28, 20, 4, 5, 24, 15 };
+const vector<byte> k1_of_k = { 15, 2, 5, 0, 13, 31, 5, 10, 18, 2, 3, 14, 14, 0, 11, 1, 20, 15, 14, 27, 6, 11, 19, 3, 6, 20, 14, 2, 28, 11, 5, 8 };
+const vector<byte> k2_of_k = { 4, 24, 23, 12, 22, 21, 31, 15, 29, 1, 0, 26, 17, 24, 16, 5, 31, 0, 20, 21, 26, 30, 15, 11, 16, 23, 18, 30, 30, 19, 28, 23 };
 
 /* Note: mk = master key = K */
 
-block create_key_from_mk(bskey K, vector<byte> r) {
+block create_key_from_mk(bskey K, vector<byte> r)
+{
     bskey res;
     for (int i = 0; i < r.size(); i++) {
-	res[i] = K[r[i]];
+        res[i] = K[r[i]];
     }
     unsigned long x = res.to_ulong();
-    assert (x < 1UL << 32);
+    assert(x < 1UL << 32);
     return (block)x;
 }
 
-unordered_map<byte, byte> inverse_key_schedule(vector<byte> r) {
+unordered_map<byte, byte> inverse_key_schedule(vector<byte> r)
+{
     unordered_map<byte, byte> m;
     for (int i = 0; i < r.size(); i++) {
-	m[r[i]] = i;
+        m[r[i]] = i;
     }
     return m;
 }
 
-bskey create_mk_template_from_k2(block K2) {
+bskey create_mk_template_from_k2(block K2)
+{
     bskey mk;
     bskey k2(K2);
     for (auto p : inverse_key_schedule(k2_of_k)) {
-	mk[p.first] = k2[p.second];
+        mk[p.first] = k2[p.second];
     }
     return mk;
 }
 
 /* The bits of the master key we need to brute force are : */
-const vector<byte> to_bruteforce = {2, 3, 6, 7, 8, 9, 10, 13, 14, 25, 27};
-   
+const vector<byte> to_bruteforce = { 2, 3, 6, 7, 8, 9, 10, 13, 14, 25, 27 };
 
-block complete_mk_with(bskey mk, block seed) {
-    assert (seed < (1 << to_bruteforce.size()));
+block complete_mk_with(bskey mk, block seed)
+{
+    assert(seed < (1 << to_bruteforce.size()));
     for (int i = 0; i < to_bruteforce.size(); i++) {
-	byte ith_bit = (seed & (1 << i)) >> i;
-	assert (ith_bit == 0 || ith_bit == 1);
-	mk[to_bruteforce[i]] = ith_bit;
+        byte ith_bit = (seed & (1 << i)) >> i;
+        assert(ith_bit == 0 || ith_bit == 1);
+        mk[to_bruteforce[i]] = ith_bit;
     }
-    
+
     unsigned long x = mk.to_ulong();
-    assert (x < 1UL << 32);
+    assert(x < 1UL << 32);
     return (block)x;
 }
 
-block find_mk(block K2) {
+block find_mk(block K2)
+{
     bskey mkt = create_mk_template_from_k2(K2);
     for (int i = 0; i < (1 << to_bruteforce.size()); i++) {
-	block guess = complete_mk_with(mkt, i);
+        block guess = complete_mk_with(mkt, i);
 
-	B32_Cipher c = {
-	    create_key_from_mk(guess, k0_of_k),
-	    create_key_from_mk(guess, k1_of_k),
-	    create_key_from_mk(guess, k2_of_k)
-	};
-	assert (c.K2 == K2);
-	for (int j = 0; j < Ciphertext.size(); j++) {
-	    if (Ciphertext[i] != B32_Encode(c, Plaintext[i])) {
-		goto next_guess; // Take that Dijkstra
-	    }
-	}
-	return guess;
-	
-    next_guess:;
+        B32_Cipher c = {
+            create_key_from_mk(guess, k0_of_k),
+            create_key_from_mk(guess, k1_of_k),
+            create_key_from_mk(guess, k2_of_k)
+        };
+        assert(c.K2 == K2);
+        for (int j = 0; j < Ciphertext.size(); j++) {
+            if (Ciphertext[j] != B32_Encode(c, Plaintext[j])) {
+                goto next_guess; // Take that Dijkstra
+            }
+        }
+        return guess;
+
+    next_guess:
+        ;
     }
-    assert (false && "Could not find master key!");
+    assert(false && "Could not find master key!");
 }
 
 /* ==== main ==== */
@@ -451,7 +462,7 @@ block find_mk(block K2) {
 int main()
 {
     assert(Plaintext.size() == Ciphertext.size());
-    
+
     rng.seed(time(0));
 
     block k = 0u | 1u | (1u << 31);
@@ -479,23 +490,23 @@ int main()
     question6(L);
 
     block MK = random_block();
+    TEST_MK = MK;
 
     TEST_CIPHER = {
-	create_key_from_mk(MK, k0_of_k),
-	create_key_from_mk(MK, k1_of_k),
-	create_key_from_mk(MK, k2_of_k)
+        create_key_from_mk(MK, k0_of_k),
+        create_key_from_mk(MK, k1_of_k),
+        create_key_from_mk(MK, k2_of_k)
     };
     init_test();
 
-    byte guess = find_subkey_1_box({{4,8}, {9,4}, {13,12}}, 0);
+    byte guess = find_subkey_1_box({ { 4, 8 }, { 9, 4 }, { 13, 12 } }, 0);
     cout << (int)guess << endl;
     pb(guess);
-    block k2 = find_key_1_block({{4,8}, {9,4}, {13,12}});
+    block k2 = find_key_1_block({ { 4, 8 }, { 9, 4 }, { 13, 12 } });
     pb(k2);
     pb(TEST_CIPHER.K2);
     pb(MK);
     pb(find_mk(TEST_CIPHER.K2));
-    
-    
+
     return 0;
 }

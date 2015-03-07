@@ -3,6 +3,7 @@ vector<block> Plaintext;
 vector<block> Ciphertext;
 
 B32_Cipher TEST_CIPHER;
+block TEST_MK;
 
 void init_test() {
     B32_Cipher c = TEST_CIPHER;
