@@ -15,16 +15,15 @@ typedef unsigned char byte;
 typedef vector<byte> bytes;
 typedef uint32_t block;
 
+/* Bit reversal, from http://aggregate.org/MAGIC/#Bit%20Reversal */
 
-unsigned int
-BS(unsigned int x)
+block BS(block x)
 {
     x = (((x & 0xaaaaaaaa) >> 1) | ((x & 0x55555555) << 1));
     x = (((x & 0xcccccccc) >> 2) | ((x & 0x33333333) << 2));
     x = (((x & 0xf0f0f0f0) >> 4) | ((x & 0x0f0f0f0f) << 4));
     x = (((x & 0xff00ff00) >> 8) | ((x & 0x00ff00ff) << 8));
-    return((x >> 16) | (x << 16));
-
+    return ((x >> 16) | (x << 16));
 }
 
 /* === Block cipher === */
@@ -468,7 +467,7 @@ block complete_mk_with(bskey mk, block seed)
     for (int i = 0; i < to_bruteforce.size(); i++) {
         byte ith_bit = (seed & (1 << i)) >> i;
         assert(ith_bit == 0 || ith_bit == 1);
-	assert(mk[to_bruteforce[i]] == 0);
+        assert(mk[to_bruteforce[i]] == 0);
         mk[to_bruteforce[i]] = ith_bit;
     }
 
@@ -539,7 +538,7 @@ int main()
     cout << couples << endl;
 
     question6(L);
-/*
+    /*
     block MK = random_block();
     TEST_MK = MK;
 
@@ -550,7 +549,6 @@ int main()
     };
     init_test(); */
 
-    
     pb(find_mk_with_one_block());
 
     pb(find_key_1_block({ { 4, 8 }, { 9, 4 }, { 13, 12 } }));
