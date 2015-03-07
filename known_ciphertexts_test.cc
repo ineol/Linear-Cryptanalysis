@@ -5,15 +5,9 @@ vector<block> Ciphertext;
 B32_Cipher TEST_CIPHER;
 
 void init_test() {
-    B32_Cipher c = {
-	random_block(),
-	random_block(),
-	random_block()
-    };
-
-    TEST_CIPHER = c;
+    B32_Cipher c = TEST_CIPHER;
     
-    const int N = 10000;
+    const int N = 1000;
 
     for (int i = 0; i < N; i++) {
 	block m = random_block();
