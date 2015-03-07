@@ -15,6 +15,18 @@ typedef unsigned char byte;
 typedef vector<byte> bytes;
 typedef uint32_t block;
 
+
+unsigned int
+BS(unsigned int x)
+{
+    x = (((x & 0xaaaaaaaa) >> 1) | ((x & 0x55555555) << 1));
+    x = (((x & 0xcccccccc) >> 2) | ((x & 0x33333333) << 2));
+    x = (((x & 0xf0f0f0f0) >> 4) | ((x & 0x0f0f0f0f) << 4));
+    x = (((x & 0xff00ff00) >> 8) | ((x & 0x00ff00ff) << 8));
+    return((x >> 16) | (x << 16));
+
+}
+
 /* === Block cipher === */
 
 typedef byte sbox[16];
@@ -302,10 +314,11 @@ void question6(const imatrix& L)
             assert(false);
         }
     }
+    cout << endl;
 }
 
 /* === Question 7 === */
-#include "known_ciphertexts_test.cc" // Booooooohhhh
+#include "known_ciphertexts.cc" // Booooooohhhh
 
 /* c : cipher, k2: key guess
  */
@@ -347,6 +360,18 @@ bvec populate_map_1_box(byte a, byte b, int shift)
     return res;
 }
 
+bvec populate_map_2_boxes(byte a, byte b, int shift)
+{
+    bvec res(0x100);
+    assert(active_sbox(b) == -1);
+    for (int i = 0; i <= 0xFF; i++) {
+        block guess = i << (24 - 8 * shift);
+        guess = rotr(guess, 2);
+        res[i] = linear_rel_stats(a, b, guess, shift * 2); // indeed shift is in increments of 4
+    }
+    return res;
+}
+
 bvec average(bvec m1, bvec m2)
 {
     bvec m(m1.size());
@@ -366,11 +391,30 @@ byte find_subkey_1_box(vector<pair<byte, byte> > as, int shift)
     return distance(res.begin(), min_element(res.begin(), res.end()));
 }
 
+byte find_subkey_2_boxes(vector<pair<byte, byte> > as, int shift)
+{
+    bvec res = populate_map_2_boxes(as[0].first, as[0].second, shift);
+    for (int i = 1; i < as.size(); i++) {
+        res = average(res, populate_map_2_boxes(as[i].first, as[i].second, shift));
+    }
+
+    return distance(res.begin(), min_element(res.begin(), res.end()));
+}
+
 block find_key_1_block(vector<pair<byte, byte> > as)
 {
     block res = 0;
     for (int i = 0; i < 8; i++) {
         res |= (find_subkey_1_box(as, i) << (28 - 4 * i));
+    }
+    return rotr(res, 2);
+}
+
+block find_key_2_boxes(vector<pair<byte, byte> > as)
+{
+    block res = 0;
+    for (int i = 0; i < 4; i++) {
+        res |= (find_subkey_2_boxes(as, i) << (24 - 8 * i));
     }
     return rotr(res, 2);
 }
@@ -393,7 +437,7 @@ block create_key_from_mk(bskey K, vector<byte> r)
     }
     unsigned long x = res.to_ulong();
     assert(x < 1UL << 32);
-    return (block)x;
+    return BS((block)x);
 }
 
 unordered_map<byte, byte> inverse_key_schedule(vector<byte> r)
@@ -408,7 +452,7 @@ unordered_map<byte, byte> inverse_key_schedule(vector<byte> r)
 bskey create_mk_template_from_k2(block K2)
 {
     bskey mk;
-    bskey k2(K2);
+    bskey k2(BS(K2));
     for (auto p : inverse_key_schedule(k2_of_k)) {
         mk[p.first] = k2[p.second];
     }
@@ -424,12 +468,13 @@ block complete_mk_with(bskey mk, block seed)
     for (int i = 0; i < to_bruteforce.size(); i++) {
         byte ith_bit = (seed & (1 << i)) >> i;
         assert(ith_bit == 0 || ith_bit == 1);
+	assert(mk[to_bruteforce[i]] == 0);
         mk[to_bruteforce[i]] = ith_bit;
     }
 
     unsigned long x = mk.to_ulong();
     assert(x < 1UL << 32);
-    return (block)x;
+    return ((block)x);
 }
 
 block find_mk(block K2)
@@ -457,6 +502,13 @@ block find_mk(block K2)
     assert(false && "Could not find master key!");
 }
 
+block find_mk_with_one_block()
+{
+    block k2 = find_key_1_block({ { 4, 8 }, { 9, 4 }, { 13, 12 } });
+    block b = find_mk(k2);
+    return b;
+}
+
 /* ==== main ==== */
 
 int main()
@@ -467,7 +519,6 @@ int main()
 
     block k = 0u | 1u | (1u << 31);
     B32_Cipher test_key = { k, ~0u, ~k };
-
     cout << bitset<32>(test_key.K0) << endl;
     cout << bitset<32>(test_key.K1) << endl;
     cout << bitset<32>(test_key.K2) << endl;
@@ -488,7 +539,7 @@ int main()
     cout << couples << endl;
 
     question6(L);
-
+/*
     block MK = random_block();
     TEST_MK = MK;
 
@@ -497,16 +548,13 @@ int main()
         create_key_from_mk(MK, k1_of_k),
         create_key_from_mk(MK, k2_of_k)
     };
-    init_test();
+    init_test(); */
 
-    byte guess = find_subkey_1_box({ { 4, 8 }, { 9, 4 }, { 13, 12 } }, 0);
-    cout << (int)guess << endl;
-    pb(guess);
-    block k2 = find_key_1_block({ { 4, 8 }, { 9, 4 }, { 13, 12 } });
-    pb(k2);
-    pb(TEST_CIPHER.K2);
-    pb(MK);
-    pb(find_mk(TEST_CIPHER.K2));
+    
+    pb(find_mk_with_one_block());
+
+    pb(find_key_1_block({ { 4, 8 }, { 9, 4 }, { 13, 12 } }));
+    pb(find_key_2_boxes({ { 1, 5 }, { 3, 15 }, { 7, 7 }, { 10, 11 } }));
 
     return 0;
 }
