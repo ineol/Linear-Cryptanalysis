@@ -1,4 +1,4 @@
-block Plaintext[] = {
+vector<block> Plaintext = {
   0xfc6df5b9,
   0x3a0ef3a4,
   0xb069bc0e,
@@ -101,7 +101,7 @@ block Plaintext[] = {
   0x90f17946,
 };
 
-block Ciphertext[] = {
+vector<block> Ciphertext = {
   0xabbc85c7,
   0xcf69147,
   0x1f7cea15,

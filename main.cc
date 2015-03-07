@@ -7,6 +7,7 @@
 #include <time.h>
 #include <algorithm>
 #include <iterator>
+#include <unordered_map>
 
 using namespace std;
 
@@ -303,12 +304,60 @@ void question6(const imatrix& L)
     }
 }
 
-#include "known_ciphertexts.cc"
+/* === Question 7 === */
+#include "known_ciphertexts.cc" // Booooooohhhh
+
+/* c : cipher, k2: key guess
+ */
+block x1_guess(block c, block k2) {
+    block x2 = c ^ k2;
+    block before_S = rotr(x2, 30);
+    return apply_subst(Sinv, before_S);
+}
+
+double linear_rel_stats(byte a, byte b, block k2) {
+    block A = a << 28;
+    block B = b << 28;
+
+    int N = Plaintext.size();
+    double total = 0;
+    for (int i = 0; i < N; i++) {
+	block x1 = x1_guess(Ciphertext[i], k2);
+	if (strange_op(A, Plaintext[i]) == strange_op(rotr(B, 2), x1)) {
+	    total += 1;
+	}
+    }
+    double proba = total / double(N);
+    return (proba > .5) ? 1.0 - proba : proba;
+}
+
+typedef unordered_map<block, double> umap;
+
+umap populate_map_1_box(byte a, byte b) {
+    umap res;
+    assert(active_sbox(b) == 0); // TODO
+    for (int i = 0; i <= 0xF; i++) {
+	block guess = i << 28;
+	guess = rotr(guess, 2); 
+	res[guess] = linear_rel_stats(a, b, guess);
+    }
+    return res;
+}
+
+umap average(umap m1, umap m2) {
+    umap m;
+    for (auto p : m1) {
+	m[p.first] = (m1[p.first] + m2[p.first]) / 2.0;
+    }
+    return m;
+}
 
 /* ==== main ==== */
 
 int main()
 {
+    assert(Plaintext.size() == Ciphertext.size());
+    
     rng.seed(time(0));
 
     block k = 0u | 1u | (1u << 31);
@@ -338,5 +387,23 @@ int main()
     cout << couples << endl;
 
     question6(L);
+
+    // init_test();
+    
+    umap pm = populate_map_1_box(4, 8);
+    umap pm2 = populate_map_1_box(9, 4);
+    umap pm3 = populate_map_1_box(13, 12);
+    umap av = average(average(pm, pm2), pm3);
+      for (auto &it : pm) {
+	pb(it.first);
+	cout << it.first << " => " << it.second << endl;
+	cout << it.first << " => " << pm2[it.first] << endl;
+	cout << it.first << " => " << pm3[it.first] << endl;
+	cout << it.first << " => " << av[it.first] << endl;
+
+	cout << endl;
+    }
+
+    
     return 0;
 }
