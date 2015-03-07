@@ -305,7 +305,7 @@ void question6(const imatrix& L)
 }
 
 /* === Question 7 === */
-#include "known_ciphertexts.cc" // Booooooohhhh
+#include "known_ciphertexts_test.cc" // Booooooohhhh
 
 /* c : cipher, k2: key guess
  */
@@ -315,9 +315,9 @@ block x1_guess(block c, block k2) {
     return apply_subst(Sinv, before_S);
 }
 
-double linear_rel_stats(byte a, byte b, block k2) {
-    block A = a << 28;
-    block B = b << 28;
+double linear_rel_stats(byte a, byte b, block k2, int shift) {
+    block A = a << (28 - 4*shift);
+    block B = b << (28 - 4*shift);
 
     int N = Plaintext.size();
     double total = 0;
@@ -331,26 +331,52 @@ double linear_rel_stats(byte a, byte b, block k2) {
     return (proba > .5) ? 1.0 - proba : proba;
 }
 
-typedef unordered_map<block, double> umap;
+typedef vector<double> bvec;
 
-umap populate_map_1_box(byte a, byte b) {
-    umap res;
-    assert(active_sbox(b) == 0); // TODO
+bvec populate_map_1_box(byte a, byte b, int shift) {
+    bvec res(16);
+    assert(active_sbox(b) == 0); // Always the case
     for (int i = 0; i <= 0xF; i++) {
-	block guess = i << 28;
+	block guess = i << (28 - 4*shift);
 	guess = rotr(guess, 2); 
-	res[guess] = linear_rel_stats(a, b, guess);
+	res[i] = linear_rel_stats(a, b, guess, shift);
     }
     return res;
 }
 
-umap average(umap m1, umap m2) {
-    umap m;
-    for (auto p : m1) {
-	m[p.first] = (m1[p.first] + m2[p.first]) / 2.0;
+bvec average(bvec m1, bvec m2) {
+    bvec m(m1.size());
+    for (int i = 0; i < m.size(); i++) {
+	m[i] = (m1[i] + m2[i]) / 2.0;
     }
     return m;
 }
+
+byte find_subkey_1_box(vector<pair<byte, byte>> as, int shift) {
+    bvec res = populate_map_1_box(as[0].first, as[0].second, shift);
+    for (int i = 1; i < as.size(); i++) {
+	res = average(res, populate_map_1_box(as[i].first, as[i].second, shift));
+    }
+
+    return distance(res.begin(), min_element(res.begin(), res.end()));
+}
+
+block find_key_1_block(vector<pair<byte, byte>> as) {
+    block res = 0;
+    for (int i = 0; i < 8; i++) {
+	res |= (find_subkey_1_box(as, i) << (28 - 4*i));
+    }
+    return rotr(res, 2);
+}
+
+/* ==== Question 9 ==== */
+
+typedef bitset<32> bskey;
+
+const vector<byte> k0_of_k = {17, 31, 0, 0, 18, 7, 20, 18, 8, 1, 27, 27, 2, 4, 11, 20, 25, 13, 17, 10, 24, 9, 29, 15, 21, 18, 28, 20, 4, 5, 24, 15};
+const vector<byte> k1_of_k = {15, 2, 5, 0, 13, 31, 5, 10, 18, 2, 3, 14, 14, 0, 11, 1, 20, 15, 14, 27, 6, 11, 19, 3, 6, 20, 14, 2, 28, 11, 5, 8};
+const vector<byte> k2_of_k = {4, 24, 23, 12, 22, 21, 31, 15, 29, 1, 0, 26, 17, 24, 16, 5, 31, 0, 20, 21, 26, 30, 15, 11, 16, 23, 18, 30, 30, 19, 28, 23};
+
 
 /* ==== main ==== */
 
@@ -388,11 +414,11 @@ int main()
 
     question6(L);
 
-    // init_test();
-    
-    umap pm = populate_map_1_box(4, 8);
-    umap pm2 = populate_map_1_box(9, 4);
-    umap pm3 = populate_map_1_box(13, 12);
+    init_test();
+    /* 
+    bvec pm = populate_map_1_box(4, 8, 0);
+    bvec pm2 = populate_map_1_box(9, 4, 0);
+    pm3 = populate_map_1_box(13, 12, 0);
     umap av = average(average(pm, pm2), pm3);
       for (auto &it : pm) {
 	pb(it.first);
@@ -402,8 +428,14 @@ int main()
 	cout << it.first << " => " << av[it.first] << endl;
 
 	cout << endl;
-    }
+	}*/
 
+    byte guess = find_subkey_1_box({{4,8}, {9,4}, {13,12}}, 0);
+    cout << (int)guess << endl;
+    pb(guess);
+    block k2 = find_key_1_block({{4,8}, {9,4}, {13,12}});
+    pb(k2);
+    pb(TEST_CIPHER.K2);
     
     return 0;
 }
