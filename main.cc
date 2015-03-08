@@ -7,6 +7,7 @@
 #include <time.h>
 #include <algorithm>
 #include <iterator>
+#include <chrono>
 #include <unordered_map>
 
 using namespace std;
@@ -285,6 +286,9 @@ void print_linear_eq(block X, char var)
 
 void question6(const imatrix& L)
 {
+    cout << "Note: the bits of the linear equations start on the right of "
+            "the blocks, the bits of K2 we shall discover start on the right\n\n";
+
     for (auto& p : interresting_couples(L)) {
         byte a = p.first;
         byte b = p.second;
@@ -310,8 +314,19 @@ void question6(const imatrix& L)
             cout << "0 and 1\n";
         }
         else {
-            assert(false);
+            assert(false); // never reached
         }
+
+        cout << "Bits of K2: ";
+        if (boxes == 0 || boxes == -1) {
+            cout << "2, 3, 4, 5";
+            if (boxes == -1)
+                cout << ", ";
+        } /* no else */
+        if (boxes == 1 || boxes == -1) {
+            cout << "6, 7, 8, 9";
+        }
+        cout << endl;
     }
     cout << endl;
 }
@@ -400,7 +415,7 @@ byte find_subkey_2_boxes(vector<pair<byte, byte> > as, int shift)
     return distance(res.begin(), min_element(res.begin(), res.end()));
 }
 
-block find_key_1_block(vector<pair<byte, byte> > as)
+block find_key_1_box(vector<pair<byte, byte> > as)
 {
     block res = 0;
     for (int i = 0; i < 8; i++) {
@@ -473,7 +488,7 @@ block complete_mk_with(bskey mk, block seed)
 
     unsigned long x = mk.to_ulong();
     assert(x < 1UL << 32);
-    return ((block)x);
+    return (block)x;
 }
 
 block find_mk(block K2)
@@ -503,8 +518,11 @@ block find_mk(block K2)
 
 block find_mk_with_one_block()
 {
-    block k2 = find_key_1_block({ { 4, 8 }, { 9, 4 }, { 13, 12 } });
+    block k2 = find_key_1_box({ { 4, 8 }, { 9, 4 }, { 13, 12 } });
     block b = find_mk(k2);
+    cout << "\nMaster key k\n";
+    cout << hex << b << "\n";
+    pb(b);
     return b;
 }
 
@@ -531,11 +549,11 @@ int main()
 
     cout << endl;
 
-    cout << question4(1, 5) << endl;
+    cout << question4(1, 5) << "\n\n";
 
     imatrix L = populate_L(S);
     auto couples = interresting_couples(L);
-    cout << couples << endl;
+    cout << couples << "\n\n";
 
     question6(L);
     /*
@@ -549,10 +567,19 @@ int main()
     };
     init_test(); */
 
-    pb(find_mk_with_one_block());
+    cout << "Computing K2 with 1 box:\n";
+    auto start1 = chrono::system_clock::now();
+    pb(find_key_1_box({ { 4, 8 }, { 9, 4 }, { 13, 12 } }));
+    auto dur1 = chrono::duration_cast<chrono::microseconds>(chrono::system_clock::now() - start1);
+    cout << "in " << dur1.count() << " microseconds" << endl;
 
-    pb(find_key_1_block({ { 4, 8 }, { 9, 4 }, { 13, 12 } }));
-    pb(find_key_2_boxes({ { 1, 5 }, { 3, 15 }, { 7, 7 }, { 10, 11 } }));
+    cout << "Computing K2 with 2 boxes:\n";
+    auto start2 = chrono::system_clock::now();
+    pb(find_key_2_boxes({ { 1, 5 }, { 3, 15 }, { 7, 7 } }));
+    auto dur2 = chrono::duration_cast<chrono::microseconds>(chrono::system_clock::now() - start2);
+    cout << "in " << dur2.count() << " microseconds" << endl;
+
+    find_mk_with_one_block();
 
     return 0;
 }
